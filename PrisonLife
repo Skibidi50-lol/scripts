@@ -1,0 +1,415 @@
+local gun = "Remington 870"; --Default gun to get
+local noclipEnabled = false -- State of noclip
+local roleHighlightEnabled = false
+local highlightFolder = Instance.new("Folder", game.CoreGui)
+highlightFolder.Name = "RoleESP_Highlights"
+local fullBrightEnabled = false
+local lighting = game:GetService("Lighting")
+local punching = false
+
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local RunService = game:GetService("RunService")
+
+local SP = {}
+local PG = {
+    ["AK-47"] = true,
+    ["Remington 870"] = true,
+    ["M9"] = true,
+    ["M4A1"] = false,
+    ["All"] = true
+}
+
+
+
+local SetCFrame = function(x : CFrame)
+    LocalPlayer.Character['HumanoidRootPart'].CFrame = x;
+end
+
+local NotifyPlayer = function(title : string, text : string, dur : number)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = title;
+        Text = text;
+        Duration = dur or 5;
+    })
+end
+
+local GrabItem = function(itemorigin, item)
+    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart");
+    local timeout = tick() + 5
+
+    if hrp then 
+        SP.GetGunOldPos = not SP.GetGunOldPos and hrp.CFrame or SP.GetGunOldPos;
+    end
+
+    local ItemToGrab = itemorigin:FindFirstChild(item)
+    local IP = ItemToGrab['ITEMPICKUP']
+    local IPPos= IP.Position
+
+    if hrp then 
+        SetCFrame(CFrame.new(IPPos));
+    end; 
+
+    repeat task.wait()
+
+        pcall(function()
+            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Sit = false;
+            SetCFrame(CFrame.new(IP))
+        end); 
+        task.spawn(function()
+            game:GetService("Workspace").Remote.ItemHandler:InvokeServer(IP)
+        end)
+
+    until LocalPlayer.Backpack:FindFirstChild(item) or LocalPlayer.Character:FindFirstChild(item) or tick() - timeout >=0
+
+    pcall(function() 
+        SetCFrame(SP.GetGunOldPos);
+    end) 
+
+
+    SP.GetGunOldPos = nil
+end
+
+local GiveItem = function(gungiver, gun)
+    if gungiver and gungiver == "old" then
+        game:GetService("Workspace").Remote.ItemHandler:InvokeServer(gun)
+
+        return
+    end
+
+    for _, givers in pairs(workspace.Prison_ITEMS:GetChildren()) do
+        if givers:FindFirstChild(gun) then
+            GrabItem(gungiver, gun)
+            break
+        end
+
+        return
+    end
+
+    if gungiver then
+        workspace.Remote.ItemHandler:InvokeServer({Position = LocalPlayer.Character.Head.Position, Parent = gungiver:FindFirstChild(gun)})
+    else
+        workspace.Remote.ItemHandler:InvokeServer({Position = LocalPlayer.Character.Head.Position, Parent = workspace.Prison_ITEMS.giver:FindFirstChild(gun) or workspace.Prison_ITEMS.single:FindFirstChild(gun)})
+    end
+end
+
+local SpawnGun = function(guntogive : string)
+    if guntogive ~= "All" then
+        workspace.Remote.ItemHandler:InvokeServer({
+            Position = LocalPlayer.Character.Head.Position,
+            Parent = workspace.Prison_ITEMS.giver:FindFirstChild(guntogive)
+                or workspace.Prison_ITEMS.single:FindFirstChild(guntogive)
+        })
+    else
+        for gunName, _ in pairs(PG) do
+            if gunName ~= "All" then
+                workspace.Remote.ItemHandler:InvokeServer({
+                    Position = LocalPlayer.Character.Head.Position,
+                    Parent = workspace.Prison_ITEMS.giver:FindFirstChild(gunName)
+                        or workspace.Prison_ITEMS.single:FindFirstChild(gunName)
+                })
+            end
+        end
+    end
+end
+
+RunService.Stepped:Connect(function()
+	if noclipEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
+end)
+
+local playerList = {}
+for _, p in pairs(game.Players:GetPlayers()) do
+	if p ~= LocalPlayer then
+		table.insert(playerList, p.Name)
+	end
+end
+
+local function clearHighlights()
+	for _, h in ipairs(highlightFolder:GetChildren()) do
+		if h:IsA("Highlight") then h:Destroy() end
+	end
+end
+
+local function getTeamColor(teamName)
+	if teamName == "Guards" or teamName == "Guard" then
+		return Color3.fromRGB(0, 170, 255)
+	elseif teamName == "Prisoners" or teamName == "Prisoner" then
+		return Color3.fromRGB(255, 170, 0)
+	elseif teamName == "Criminals" or teamName == "Criminal" then
+		return Color3.fromRGB(255, 60, 60)
+	else
+		return Color3.fromRGB(200, 200, 200)
+	end
+end
+
+
+task.spawn(function()
+	while true do
+		task.wait(0.5)
+		if roleHighlightEnabled then
+			for _, player in ipairs(game.Players:GetPlayers()) do
+				if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+					local existing = highlightFolder:FindFirstChild(player.Name)
+					if not existing then
+						local hl = Instance.new("Highlight", highlightFolder)
+						hl.Name = player.Name
+						hl.Adornee = player.Character
+						hl.FillColor = getTeamColor(player.Team and player.Team.Name or "Unknown")
+						hl.OutlineColor = Color3.new(1, 1, 1)
+						hl.FillTransparency = 0.25
+						hl.OutlineTransparency = 0
+					else
+						existing.Adornee = player.Character
+						existing.FillColor = getTeamColor(player.Team and player.Team.Name or "Unknown")
+					end
+				else
+					local existing = highlightFolder:FindFirstChild(player.Name)
+					if existing then existing:Destroy() end
+				end
+			end
+		end
+	end
+end)
+
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({Name = "Klyro - Prison Life 1.0.0", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+
+local UniversalTab = Window:MakeTab({
+	Name = "Universal",
+	Icon = "rbxassetid://121160482905138",
+	PremiumOnly = false
+})
+
+local GunsTab = Window:MakeTab({
+	Name = "Guns",
+	Icon = "rbxassetid://124971614145316",
+	PremiumOnly = false
+})
+
+local ModsTab = Window:MakeTab({
+	Name = "Mods",
+	Icon = "rbxassetid://83757646428524",
+	PremiumOnly = false
+})
+
+local ulTab = Window:MakeTab({
+	Name = "Ultilities",
+	Icon = "rbxassetid://121160482905138",
+	PremiumOnly = false
+})
+
+local ExtraScriptsTab = Window:MakeTab({
+	Name = "Extra Scripts";
+	Icon = "rbxassetid://87419727060513";
+	PremiumOnly = false
+})
+
+local UniversalSection = UniversalTab:AddSection({
+	Name = "Player"
+})
+
+local GunsSection = GunsTab:AddSection({
+	Name = "Guns"
+})
+
+local ModsSection = ModsTab:AddSection({
+	Name = "Mods"
+})
+
+
+local ulSection = ulTab:AddSection({
+	Name = "Ultilities"
+})
+
+
+local scriptSection = ExtraScriptsTab:AddSection({
+	Name = "Extra Scripts";
+})
+
+UniversalSection:AddSlider({
+	Name = "WalkSpeed",
+	Min = 16,
+	Max = 120,
+	Default = 16,
+	Color = Color3.fromRGB(148,255,194),
+	Increment = 4,
+	ValueName = "WS",
+	Callback = function(Value)
+		game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+	end    
+})
+
+UniversalSection:AddSlider({
+	Name = "Jump Height",
+	Min = 50,
+	Max = 100,
+	Default = 50,
+	Color = Color3.fromRGB(255,148,148),
+	Increment = 5,
+	ValueName = "JP",
+	Callback = function(Value)
+		game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+	end    
+})
+
+UniversalSection:AddToggle({
+	Name = "Noclip",
+	Default = false,
+	Callback = function(Value)
+		noclipEnabled = Value
+		NotifyPlayer("Noclip", Value and "Enabled" or "Disabled", 2)
+	end
+})
+
+
+UniversalSection:AddButton({
+	Name = "Fling All",
+	Callback = function()
+      	loadstring(game:HttpGet("https://raw.githubusercontent.com/CorgiSideExploits/OrionLib/refs/heads/main/SkidFling", true))()
+  	end    
+})
+
+
+GunsSection:AddDropdown({
+	Name = "Select Gun",
+	Default = gun,
+	Options = {"AK-47", "Remington 870", "M9", "All"},
+	Callback = function(Value)
+		gun = Value
+	end    
+})
+
+GunsSection:AddButton({
+	Name = "Spawn Selected Gun",
+	Callback = function()
+		if PG[gun] then
+			if gun == "All" then
+				SpawnGun("All")
+				NotifyPlayer("FE Gun Spawner", "Successfully Gave You All Guns")
+			else
+				SpawnGun(gun)
+				NotifyPlayer("FE Gun Spawner", "Successfully Gave You " .. gun)
+			end
+		else
+			NotifyPlayer("Error", "Invalid gun selected", 3)
+		end
+	end
+})
+
+ModsSection:AddDropdown({
+	Name = "Teleport to Player",
+	Default = nil,
+	Options = playerList,
+	Callback = function(selected)
+		local target = game.Players:FindFirstChild(selected)
+		if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+			LocalPlayer.Character:MoveTo(target.Character.HumanoidRootPart.Position + Vector3.new(0, 3, 0))
+			NotifyPlayer("Teleported", "To " .. selected, 2)
+		end
+	end
+})
+
+ModsSection:AddButton({
+	Name = "Delete Doors",
+	Callback = function()
+      	Workspace.Doors:Destroy()
+  	end    
+})
+
+
+ModsSection:AddButton({
+	Name = "Explode Everyone (Client Side)",
+	Callback = function()
+		for _, plr in pairs(game.Players:GetPlayers()) do
+			if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+				local exp = Instance.new("Explosion", workspace)
+				exp.Position = plr.Character.HumanoidRootPart.Position
+				exp.BlastPressure = 0
+				exp.BlastRadius = 0
+			end
+		end
+		NotifyPlayer("BOOM!", "Everyone exploded", 2)
+	end
+})
+
+ulSection:AddButton({
+	Name = "Respawn",
+	Callback = function()
+		local char = LocalPlayer.Character
+		local hum = char:FindFirstChild("Humanoid")
+		if hum then hum.Health = 0 end
+	end
+})
+
+
+ulSection:AddToggle({
+	Name = "Role ESP",
+	Default = false,
+	Callback = function(Value)
+		roleHighlightEnabled = Value
+		if not v then clearHighlights() end
+		NotifyPlayer("Role ESP", Value and "Enabled" or "Disabled", 2)
+	end
+})
+
+ulSection:AddToggle({
+	Name = "Full Bright",
+	Default = false,
+	Callback = function(v)
+		fullBrightEnabled = v
+		if v then
+			lighting.FogEnd = 100000
+			lighting.Brightness = 2
+			lighting.Ambient = Color3.new(1, 1, 1)
+			NotifyPlayer("Full Bright", "Enabled", 2)
+		else
+			lighting.FogEnd = 1000
+			lighting.Brightness = 1
+			lighting.Ambient = Color3.fromRGB(112, 112, 112)
+			NotifyPlayer("Full Bright", "Disabled", 2)
+		end
+	end
+})
+
+
+ulSection:AddButton({
+	Name = "Rejoin Server",
+	Callback = function()
+		game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
+	end
+})
+
+scriptSection:AddButton({
+	Name = "Infinite Yield",
+	Callback = function()
+      	loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+  	end    
+})
+
+scriptSection:AddButton({
+	Name = "Unnamed ESP",
+	Callback = function()
+      	loadstring(game:HttpGet('https://raw.githubusercontent.com/ic3w0lf22/Unnamed-ESP/master/UnnamedESP.lua'))()
+  	end    
+})
+
+scriptSection:AddButton({
+	Name = "FPS Gui",
+	Callback = function()
+      	loadstring(game:HttpGet("https://raw.githubusercontent.com/Skibidi50-lol/NerionProduct/refs/heads/main/fpsgui.lua"))()
+  	end    
+})
+
+scriptSection:AddButton({
+	Name = "PrizzLife";
+	Callback = function()
+		loadstring(game:HttpGet('https://raw.githubusercontent.com/devguy100/PrizzLife/main/pladmin.lua'))()
+	end,
+})
+
+OrionLib:Init()
