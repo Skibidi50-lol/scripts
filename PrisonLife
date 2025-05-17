@@ -1,25 +1,25 @@
-local gun = "Remington 870"; --Default gun to get
-local noclipEnabled = false -- State of noclip
-local roleHighlightEnabled = false
-local highlightFolder = Instance.new("Folder", game.CoreGui)
-highlightFolder.Name = "RoleESP_Highlights"
-local fullBrightEnabled = false
-local lighting = game:GetService("Lighting")
-local punching = false
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({Name = "Prison Life - Syntix", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+
+local noclipEnabled = false
+local InfiniteJumpEnabled = false
+
+local selectedGunMod = nil
+local gunMod = nil
 
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local RunService = game:GetService("RunService")
+
+local gun = "Remington 870";
 
 local SP = {}
 local PG = {
     ["AK-47"] = true,
     ["Remington 870"] = true,
     ["M9"] = true,
-    ["M4A1"] = false,
+    ["M4A1"] = true,
     ["All"] = true
 }
-
-
 
 local SetCFrame = function(x : CFrame)
     LocalPlayer.Character['HumanoidRootPart'].CFrame = x;
@@ -122,63 +122,15 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
-local playerList = {}
-for _, p in pairs(game.Players:GetPlayers()) do
-	if p ~= LocalPlayer then
-		table.insert(playerList, p.Name)
-	end
+function infJump()
+   game:GetService("UserInputService").JumpRequest:connect(function()
+	if InfiniteJumpEnabled then
+		game:GetService"Players".LocalPlayer.Character:FindFirstChildOfClass'Humanoid':ChangeState("Jumping")
+	    end
+    end)
 end
 
-local function clearHighlights()
-	for _, h in ipairs(highlightFolder:GetChildren()) do
-		if h:IsA("Highlight") then h:Destroy() end
-	end
-end
-
-local function getTeamColor(teamName)
-	if teamName == "Guards" or teamName == "Guard" then
-		return Color3.fromRGB(0, 170, 255)
-	elseif teamName == "Prisoners" or teamName == "Prisoner" then
-		return Color3.fromRGB(255, 170, 0)
-	elseif teamName == "Criminals" or teamName == "Criminal" then
-		return Color3.fromRGB(255, 60, 60)
-	else
-		return Color3.fromRGB(200, 200, 200)
-	end
-end
-
-
-task.spawn(function()
-	while true do
-		task.wait(0.5)
-		if roleHighlightEnabled then
-			for _, player in ipairs(game.Players:GetPlayers()) do
-				if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-					local existing = highlightFolder:FindFirstChild(player.Name)
-					if not existing then
-						local hl = Instance.new("Highlight", highlightFolder)
-						hl.Name = player.Name
-						hl.Adornee = player.Character
-						hl.FillColor = getTeamColor(player.Team and player.Team.Name or "Unknown")
-						hl.OutlineColor = Color3.new(1, 1, 1)
-						hl.FillTransparency = 0.25
-						hl.OutlineTransparency = 0
-					else
-						existing.Adornee = player.Character
-						existing.FillColor = getTeamColor(player.Team and player.Team.Name or "Unknown")
-					end
-				else
-					local existing = highlightFolder:FindFirstChild(player.Name)
-					if existing then existing:Destroy() end
-				end
-			end
-		end
-	end
-end)
-
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
-local Window = OrionLib:MakeWindow({Name = "Klyro - Prison Life 1.0.0", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
-
+--TABS
 local UniversalTab = Window:MakeTab({
 	Name = "Universal",
 	Icon = "rbxassetid://121160482905138",
@@ -197,19 +149,8 @@ local ModsTab = Window:MakeTab({
 	PremiumOnly = false
 })
 
-local ulTab = Window:MakeTab({
-	Name = "Ultilities",
-	Icon = "rbxassetid://121160482905138",
-	PremiumOnly = false
-})
-
-local ExtraScriptsTab = Window:MakeTab({
-	Name = "Extra Scripts";
-	Icon = "rbxassetid://87419727060513";
-	PremiumOnly = false
-})
-
-local UniversalSection = UniversalTab:AddSection({
+--SECTIONS
+local PlayerSection = UniversalTab:AddSection({
 	Name = "Player"
 })
 
@@ -217,39 +158,34 @@ local GunsSection = GunsTab:AddSection({
 	Name = "Guns"
 })
 
+local GunsModSection = GunsTab:AddSection({
+	Name = "Guns Mod (Level 8 Executor Only)"
+})
+
+
 local ModsSection = ModsTab:AddSection({
 	Name = "Mods"
 })
-
-
-local ulSection = ulTab:AddSection({
-	Name = "Ultilities"
-})
-
-
-local scriptSection = ExtraScriptsTab:AddSection({
-	Name = "Extra Scripts";
-})
-
-UniversalSection:AddSlider({
+--UNIVERSAL TAB
+PlayerSection:AddSlider({
 	Name = "WalkSpeed",
 	Min = 16,
-	Max = 120,
+	Max = 250,
 	Default = 16,
-	Color = Color3.fromRGB(148,255,194),
-	Increment = 4,
+	Color = Color3.fromRGB(255,255,255),
+	Increment = 5,
 	ValueName = "WS",
 	Callback = function(Value)
 		game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
 	end    
 })
 
-UniversalSection:AddSlider({
-	Name = "Jump Height",
+PlayerSection:AddSlider({
+	Name = "JumpPower",
 	Min = 50,
-	Max = 100,
+	Max = 250,
 	Default = 50,
-	Color = Color3.fromRGB(255,148,148),
+	Color = Color3.fromRGB(255,255,255),
 	Increment = 5,
 	ValueName = "JP",
 	Callback = function(Value)
@@ -257,37 +193,45 @@ UniversalSection:AddSlider({
 	end    
 })
 
-UniversalSection:AddToggle({
+PlayerSection:AddToggle({
 	Name = "Noclip",
 	Default = false,
 	Callback = function(Value)
 		noclipEnabled = Value
 		NotifyPlayer("Noclip", Value and "Enabled" or "Disabled", 2)
-	end
+	end    
 })
 
+PlayerSection:AddToggle({
+	Name = "Infinite Jump",
+	Default = false,
+	Callback = function(Value)
+		InfiniteJumpEnabled = Value
+		infJump()
+		NotifyPlayer("Infinite Jump", Value and "Enabled" or "Disabled", 2)
+	end    
+})
 
-UniversalSection:AddButton({
+PlayerSection:AddButton({
 	Name = "Fling All",
 	Callback = function()
       	loadstring(game:HttpGet("https://raw.githubusercontent.com/CorgiSideExploits/OrionLib/refs/heads/main/SkidFling", true))()
   	end    
 })
-
-
+--GUNS TAB
 GunsSection:AddDropdown({
-	Name = "Select Gun",
-	Default = gun,
-	Options = {"AK-47", "Remington 870", "M9", "All"},
+	Name = "Choose Gun",
+	Default = "Remington 870",
+	Options = {"Remington 870", "M9", "M14A1", "AK-47", "All"},
 	Callback = function(Value)
 		gun = Value
 	end    
 })
 
 GunsSection:AddButton({
-	Name = "Spawn Selected Gun",
+	Name = "Get Gun",
 	Callback = function()
-		if PG[gun] then
+      	if PG[gun] then
 			if gun == "All" then
 				SpawnGun("All")
 				NotifyPlayer("FE Gun Spawner", "Successfully Gave You All Guns")
@@ -298,118 +242,126 @@ GunsSection:AddButton({
 		else
 			NotifyPlayer("Error", "Invalid gun selected", 3)
 		end
-	end
+  	end    
 })
-
-ModsSection:AddDropdown({
-	Name = "Teleport to Player",
+--GUN MOD
+GunsModSection:AddDropdown({
+	Name = "Infinite Ammo",
 	Default = nil,
-	Options = playerList,
-	Callback = function(selected)
-		local target = game.Players:FindFirstChild(selected)
-		if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-			LocalPlayer.Character:MoveTo(target.Character.HumanoidRootPart.Position + Vector3.new(0, 3, 0))
-			NotifyPlayer("Teleported", "To " .. selected, 2)
-		end
-	end
-})
-
-ModsSection:AddButton({
-	Name = "Delete Doors",
-	Callback = function()
-      	Workspace.Doors:Destroy()
-  	end    
-})
-
-
-ModsSection:AddButton({
-	Name = "Explode Everyone (Client Side)",
-	Callback = function()
-		for _, plr in pairs(game.Players:GetPlayers()) do
-			if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-				local exp = Instance.new("Explosion", workspace)
-				exp.Position = plr.Character.HumanoidRootPart.Position
-				exp.BlastPressure = 0
-				exp.BlastRadius = 0
-			end
-		end
-		NotifyPlayer("BOOM!", "Everyone exploded", 2)
-	end
-})
-
-ulSection:AddButton({
-	Name = "Respawn",
-	Callback = function()
-		local char = LocalPlayer.Character
-		local hum = char:FindFirstChild("Humanoid")
-		if hum then hum.Health = 0 end
-	end
-})
-
-
-ulSection:AddToggle({
-	Name = "Role ESP",
-	Default = false,
+	Options = {"Remington 870", "M9", "M14A1", "AK-47"},
 	Callback = function(Value)
-		roleHighlightEnabled = Value
-		if not v then clearHighlights() end
-		NotifyPlayer("Role ESP", Value and "Enabled" or "Disabled", 2)
-	end
+        selectedGunMod = Value
+
+        local gunTool = game.Players.LocalPlayer.Backpack:FindFirstChild(selectedGunMod)
+        if not gunTool then
+            NotifyPlayer("Gun Mod", "Please get the gun first using the 'Get Gun' button", 3)
+            gunMod = nil
+            return
+        end
+
+        local success, result = pcall(function()
+            return require(gunTool:WaitForChild("GunStates"))
+        end)
+
+        if success then
+            gunMod = result
+            NotifyPlayer("Gun Mod", selectedGunMod .. " gunMod loaded", 2)
+        else
+            NotifyPlayer("Gun Mod", "Failed to load GunStates", 3)
+            gunMod = nil
+        end
+	end    
 })
 
-ulSection:AddToggle({
-	Name = "Full Bright",
-	Default = false,
-	Callback = function(v)
-		fullBrightEnabled = v
-		if v then
-			lighting.FogEnd = 100000
-			lighting.Brightness = 2
-			lighting.Ambient = Color3.new(1, 1, 1)
-			NotifyPlayer("Full Bright", "Enabled", 2)
+GunsModSection:AddButton({
+	Name = "Apply",
+	Callback = function()
+        if gunMod then
+            gunMod["MaxAmmo"] = math.huge
+            gunMod["CurrentAmmo"] = math.huge
+            gunMod["StoredAmmo"] = math.huge
+            NotifyPlayer("Gun Mod", "Infinite ammo applied", 2)
+        else
+            NotifyPlayer("Gun Mod", "No gun gunMod loaded", 3)
+        end
+	end    
+})
+
+GunsModSection:AddDropdown({
+	Name = "AutoFire",
+	Default = nil,
+	Options = {"Remington 870", "M9", "M14A1", "AK-47"},
+	Callback = function(Value)
+		selectedGunForMod = Value
+		local gunInBackpack = game.Players.LocalPlayer.Backpack:FindFirstChild(Value)
+		if gunInBackpack then
+			gunMod = require(gunInBackpack:FindFirstChild("GunStates"))
+			NotifyPlayer("Gun Mod", Value .. " loaded", 2)
 		else
-			lighting.FogEnd = 1000
-			lighting.Brightness = 1
-			lighting.Ambient = Color3.fromRGB(112, 112, 112)
-			NotifyPlayer("Full Bright", "Disabled", 2)
+			NotifyPlayer("Gun Mod", Value .. " not found in backpack", 2)
+			gunMod = nil
 		end
-	end
+	end    
 })
 
-
-ulSection:AddButton({
-	Name = "Rejoin Server",
+GunsModSection:AddButton({
+	Name = "Apply",
 	Callback = function()
-		game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
-	end
+		if gunMod then
+			gunMod["AutoFire"] = true
+			NotifyPlayer("Gun Mod", "Spread applied to " .. selectedGunForMod, 2)
+		else
+			NotifyPlayer("Gun Mod", "No gun gunMod loaded", 2)
+		end
+	end    
 })
 
-scriptSection:AddButton({
-	Name = "Infinite Yield",
-	Callback = function()
-      	loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-  	end    
+GunsModSection:AddDropdown({
+	Name = "OP Gun Mod(Buggy)",
+	Default = nil,
+	Options = {"Remington 870", "M9", "M14A1", "AK-47"},
+	Callback = function(Value)
+        selectedGunMod = Value
+
+        local gunTool = game.Players.LocalPlayer.Backpack:FindFirstChild(selectedGunMod)
+        if not gunTool then
+            NotifyPlayer("Gun Mod", "Please get the gun first using the 'Get Gun' button", 3)
+            gunMod = nil
+            return
+        end
+
+        local success, result = pcall(function()
+            return require(gunTool:WaitForChild("GunStates"))
+        end)
+
+        if success then
+            gunMod = result
+            NotifyPlayer("Gun Mod", selectedGunMod .. " gunMod loaded", 2)
+        else
+            NotifyPlayer("Gun Mod", "Failed to load GunStates", 3)
+            gunMod = nil
+        end
+	end    
 })
 
-scriptSection:AddButton({
-	Name = "Unnamed ESP",
+GunsModSection:AddButton({
+	Name = "Apply",
 	Callback = function()
-      	loadstring(game:HttpGet('https://raw.githubusercontent.com/ic3w0lf22/Unnamed-ESP/master/UnnamedESP.lua'))()
-  	end    
+        if gunMod then
+            gunMod["MaxAmmo"] = math.huge
+            gunMod["CurrentAmmo"] = math.huge
+            gunMod["StoredAmmo"] = math.huge
+            gunMod["FireRate"] = 0.35
+            gunMod["Spread"] = 0
+            gunMod["Range"] = 1200
+            gunMod["Bullets"] = 10
+            NotifyPlayer("Gun Mod", "Gun Mod applied", 2)
+        else
+            NotifyPlayer("Gun Mod", "No gun gunMod loaded", 3)
+        end
+	end    
 })
 
-scriptSection:AddButton({
-	Name = "FPS Gui",
-	Callback = function()
-      	loadstring(game:HttpGet("https://raw.githubusercontent.com/Skibidi50-lol/NerionProduct/refs/heads/main/fpsgui.lua"))()
-  	end    
-})
 
-scriptSection:AddButton({
-	Name = "PrizzLife";
-	Callback = function()
-		loadstring(game:HttpGet('https://raw.githubusercontent.com/devguy100/PrizzLife/main/pladmin.lua'))()
-	end,
-})
 
 OrionLib:Init()
