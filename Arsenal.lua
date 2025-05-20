@@ -5,26 +5,28 @@ local ESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/linemaste
 
 getgenv().GO = false
 getgenv().HitboxSize = 10
+getgenv().HitboxVisible = false
 
 game:GetService("RunService").Stepped:Connect(function()
     for i,v in pairs(game:GetService("Players"):GetPlayers()) do
         if v:IsA("Player") and v ~= game:GetService("Players").LocalPlayer and v.Character and GO then
             local size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
+            local transparency = HitboxVisible and 0.6 or 1
 
             v.Character.RightUpperLeg.CanCollide = false
-            v.Character.RightUpperLeg.Transparency = 5
+            v.Character.RightUpperLeg.Transparency = transparency
             v.Character.RightUpperLeg.Size = size
 
             v.Character.LeftUpperLeg.CanCollide = false
-            v.Character.LeftUpperLeg.Transparency = 5
+            v.Character.LeftUpperLeg.Transparency = transparency
             v.Character.LeftUpperLeg.Size = size
 
             v.Character.HeadHB.CanCollide = false
-            v.Character.HeadHB.Transparency = 5
+            v.Character.HeadHB.Transparency = transparency
             v.Character.HeadHB.Size = size
 
             v.Character.HumanoidRootPart.CanCollide = false
-            v.Character.HumanoidRootPart.Transparency = 5
+            v.Character.HumanoidRootPart.Transparency = transparency
             v.Character.HumanoidRootPart.Size = size
         end
     end
@@ -108,7 +110,7 @@ aimTab:Toggle{
 }
 
 aimTab:Toggle{
-	Name = "Silent Aim",
+	Name = "Hitbox Expander",
 	StartingState = false,
 	Description = nil,
 	Callback = function(v) 
@@ -116,8 +118,17 @@ aimTab:Toggle{
     end
 }
 
+aimTab:Toggle{
+	Name = "Show Hitbox",
+	StartingState = false,
+	Description = nil,
+	Callback = function(v) 
+		getgenv().HitboxVisible = v
+    end
+}
+
 aimTab:Slider{
-	Name = "Silent Aim Size",
+	Name = "Hitbox Size",
 	Default = 10,
 	Min = 1,
 	Max = 25,
