@@ -65,7 +65,7 @@ end)
 LocalPlayer.PlayerGui.DescendantAdded:Connect(function(Descendant)
     if Enabled then
         if Descendant.Name == 'button' and Descendant.Parent.Name == 'safezone' then
-            task.wait(0.1)
+            task.wait(0.3)
             GuiService.SelectedObject = Descendant
             VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
             VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
@@ -107,7 +107,7 @@ task.spawn(function()
             LocalPlayer.Character.HumanoidRootPart.Position = LoopPosition
         end
 
-        task.wait(0.25)
+        task.wait(0.75)
     end
 end)
 
