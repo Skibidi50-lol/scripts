@@ -91,7 +91,7 @@ task.spawn(function()
         if Enabled and not Progress then
             if Rod then
                 Progress = true
-                task.wait(0.1)
+                task.wait(0.5)
                 Rod.events.reset:FireServer()
                 Rod.events.cast:FireServer(100.5)
             end
@@ -107,7 +107,7 @@ task.spawn(function()
             LocalPlayer.Character.HumanoidRootPart.Position = LoopPosition
         end
 
-        task.wait(0.1)
+        task.wait(0.25)
     end
 end)
 
