@@ -22,7 +22,7 @@ function ShowNotification(String)
     CoreGui:SetCore('SendNotification', {
         Title = 'Auto Farm',
         Text = String,
-        Duration = 1
+        Duration = 2
     })
 end
 
