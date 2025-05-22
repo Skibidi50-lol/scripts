@@ -126,4 +126,3 @@ else
     ContextActionService:BindAction('ToggleFarm', ToggleFarm, false, Keybind)
     ShowNotification(`Press '{Keybind.Name}' to enable/disable`)
 end
-end)
